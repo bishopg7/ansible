@@ -1,7 +1,6 @@
 This role installs and runs apache kafka in standalone or cluster mode.
 
-Requireаd installed zookeeper.You can get it here:
-https://github.com/bishopg7/ansible-role-zookeeper
+Requireаd installed zookeeper.
 
 example playbook:
 ~~~~
