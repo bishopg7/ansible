@@ -1,0 +1,69 @@
+---
+ 
+  - name: user kafka
+    user:
+      name: kafka
+      shell: /bin/bash
+  
+  - name: create workdir, datadir
+    file:
+       path: "{{ item }}"
+       state: directory
+       owner: root
+       group: root
+       mode: 0755
+    with_items:
+       - "{{ hadoop_work_dir }}"
+       - "{{ hadoop_data_dir }}"
+
+  - name: create kafka data dir
+    file:
+       path: "{{ item }}"
+       state: directory
+       owner: kafka
+       group: kafka
+       mode: 0755
+    with_items:
+       - "{{ hadoop_data_dir }}/kafka"
+
+  - name: download kafka
+    get_url:
+      url: "{{ kafka_download_url }}"
+      dest: "{{ hadoop_work_dir }}"
+
+  - name: unarchive kafka
+    unarchive:
+     src: "{{ hadoop_work_dir }}/kafka_{{ kafka_version }}.tgz"
+     dest: "{{ hadoop_work_dir }}"
+     remote_src: yes
+     owner: kafka
+     group: kafka
+     mode: 0755
+ 
+  - name: change owner
+    file:
+      path: "{{ hadoop_work_dir }}/kafka_{{ kafka_version }}"
+      owner: kafka
+      group: kafka
+      mode: 0755
+      recurse: yes
+
+  - name: add config
+    template:
+      src: server.properties
+      dest: "{{ hadoop_work_dir }}/kafka_{{ kafka_version }}/config/server.properties"
+      owner: kafka
+      group: kafka
+      mode: 0644
+
+ 
+  - name: replace kafka-server-start.sh 
+    template: 
+      src: kafka-server-start.sh
+      dest: "{{ hadoop_work_dir }}/kafka_{{ kafka_version }}/bin/kafka-server-start.sh"
+      owner: kafka
+      group: kafka
+      mode: 0755
+  
+  - name: start kafka
+    command: "su kafka -c '{{ hadoop_work_dir }}/kafka_{{ kafka_version }}/bin/kafka-server-start.sh -daemon {{ hadoop_work_dir }}/kafka_{{ kafka_version }}/config/server.properties'"

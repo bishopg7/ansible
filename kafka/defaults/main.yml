@@ -1,0 +1,6 @@
+hadoop_work_dir: "/opt/hadoop"
+hadoop_data_dir: "/data/hadoop"
+kafka_version: "2.12-2.3.0"
+Xmx_size: "1G"
+Xms_size: "1G"
+kafka_download_url: http://apache-mirror.rbc.ru/pub/apache/kafka/2.3.0/kafka_2.12-2.3.0.tgz 

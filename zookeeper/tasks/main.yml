@@ -1,0 +1,71 @@
+---
+
+  - name: user zookeeper
+    user:
+      name: zookeeper
+      shell: /bin/bash
+
+  - name: create workdir, datadir
+    file:
+      path: "{{ item }}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+    with_items:
+      - "{{ hadoop_work_dir }}"
+      - "{{ hadoop_data_dir }}"
+
+  - name: create zookeeper data dir
+    file:
+      path: "{{ item }}"
+      state: directory
+      owner: zookeeper
+      group: zookeeper
+      mode: 0755
+    with_items:
+      - "{{ hadoop_data_dir }}/zookeeper"
+
+  - name: download zookeeper
+    get_url:
+      url: "{{ zookeeper_download_url }}"
+      dest: "{{ hadoop_work_dir }}"
+
+  - name: unarchive zookeeper
+    unarchive:
+      src: "{{ hadoop_work_dir }}/apache-zookeeper-{{ zookeeper_version }}-bin.tar.gz"
+      dest: "{{ hadoop_work_dir }}"
+      owner: zookeeper
+      group: zookeeper
+      mode: 0755
+      remote_src: yes
+
+  - name: change owner
+    file:
+      path: "{{ hadoop_work_dir }}/apache-zookeeper-{{ zookeeper_version }}-bin"
+      owner: zookeeper
+      group: zookeeper
+      mode: 0755
+      recurse: yes
+
+  - name: add config
+    template:
+      src: zoo.cfg
+      dest: "{{ hadoop_work_dir }}/apache-zookeeper-{{ zookeeper_version }}-bin/conf/zoo.cfg"
+      owner: zookeeper
+      group: zookeeper
+      mode: 0644
+
+  - name: add myid
+    template:
+      src: myid
+      dest: "{{ hadoop_data_dir }}/zookeeper/myid"
+      owner: zookeeper
+      group: zookeeper
+      mode: 0644
+
+
+  - name: start zookeeper
+    command: "{{ hadoop_work_dir }}/apache-zookeeper-{{ zookeeper_version }}-bin/bin/zkServer.sh start"
+    become: yes
+    become_user: zookeeper
