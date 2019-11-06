@@ -1,0 +1,56 @@
+---
+
+  - name: init swarm on first manager
+    docker_swarm:
+        state: present
+        advertise_addr: "{{ ansible_default_ipv4.address }}"
+    when: "inventory_hostname == groups['swarm_manager'][0]"
+
+  - name: get address of the first swarm manager.
+    set_fact:
+        swarm_manager_address: "{{ ansible_default_ipv4.address }}:2377"
+    when: "inventory_hostname == groups['swarm_manager'][0]"
+
+  - name: share swarm manager address to other nodes
+    set_fact:
+        swarm_manager_address: "{{ hostvars[groups['swarm_manager'][0]]['swarm_manager_address'] }}"
+    when: "inventory_hostname != groups['swarm_manager'][0]"
+
+  - name: get manager token
+    shell: docker swarm join-token manager -q
+    register: swarm_manager_token
+    delegate_to: "{{ groups['swarm_manager'][0] }}"
+    delegate_facts: True
+    #when: "'swarm-manager' in group_names and inventory_hostname != groups['swarm-manager'][0]"
+    when: "'swarm_manager' in group_names"
+
+  - debug:
+        msg: "{{ swarm_manager_token.stdout }}"
+    when: "'swarm_manager' in group_names"
+
+  - name: join managers to cluster
+    docker_swarm:
+        state: join
+        advertise_addr: "{{ ansible_default_ipv4.address }}"
+        join_token: "{{ swarm_manager_token.stdout }}"
+        remote_addrs: ["{{ swarm_manager_address }}"]
+    when: "'swarm_manager' in group_names"
+
+  - name: get worker token
+    shell: docker swarm join-token worker -q
+    register: swarm_worker_token
+    delegate_to: "{{ groups['swarm_manager'][0] }}"
+    delegate_facts: True
+    when: "'swarm_worker' in group_names" 
+
+  - debug:
+        msg: "{{ swarm_worker_token.stdout }}"
+    when: "'swarm_worker' in group_names"  
+ 
+  - name: join workers to cluster
+    docker_swarm:
+        state: join
+        advertise_addr: "{{ ansible_default_ipv4.address }}"
+        join_token: "{{ swarm_worker_token.stdout }}"
+        remote_addrs: ["{{ swarm_manager_address }}"]
+    when: "'swarm_worker' in group_names"

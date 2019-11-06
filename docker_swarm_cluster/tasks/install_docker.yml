@@ -1,0 +1,55 @@
+---
+
+  - name: create_repo
+    yum_repository:
+        name: docker-ce
+        description: Repository Docker-CE-Repo
+        baseurl: "http://{{ nexus.user }}:{{ nexus.password }}@{{ nexus.host }}:{{ nexus.port }}/repository/Docker-CE-Repo/$basearch/stable"
+        enabled: yes
+        gpgcheck: no
+  
+  - name: install_required_packages
+    yum:
+        name: [yum-utils, device-mapper-persistent-data, lvm2, docker-ce, python-pip]
+
+  - name: install pip repo
+    template:
+        src: pip.conf
+        dest: /etc/pip.conf
+
+  - name: install python reirements
+    pip:
+        name: [docker-py, jsondiff, pyyaml]
+
+  - name: create new docker.home_dir
+    file:
+        name: "{{ docker.home_dir }}"
+        state: directory
+
+  - name: create symlink to new docker.home_dir
+    file:
+        src: "{{ docker.home_dir }}"
+        dest: /var/lib/docker
+        state: link
+  
+  - name: create /etc/docker
+    file:
+        name: /etc/docker
+        state: directory
+
+  - name: add daemon.json for docker
+    template:
+        src: daemon.json
+        dest: /etc/docker/daemon.json
+
+  - name: manage docker service
+    systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+  - name: log into docker regisry
+    docker_login:
+        registry: "{{ docker.registry_host }}:{{ docker.registry_port }}" 
+        username: "{{ nexus.user }}"
+        password: "{{ nexus.password }}"

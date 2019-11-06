@@ -1,0 +1,11 @@
+nexus:
+        user: "user"
+        password: "password"
+        host: "192.168.0.1"
+        port: "8888"
+
+docker:
+        home_dir: "/data/docker"
+        registry_host: "192.168.0.1"
+        registry_port: "5000"           
+        
